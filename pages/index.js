@@ -368,7 +368,7 @@ export default function LoginPage() {
                 disabled={fpLoading}
                 style={{ height: 52, fontSize: 16 }}
               >
-                {fpLoading ? 'Sending...' : 'Send OTP ✉️'}
+                {fpLoading ? 'Sending...' : 'Send OTP'}
               </button>
             </div>
           </div>

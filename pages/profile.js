@@ -161,9 +161,9 @@ export default function ProfilePage() {
 
   const fetchMySkills = async () => {
     try {
-      const data = await api('/skills');
-      const mine = (data.skills || []).filter(s => String(s.mentor_id) === String(user?._id));
-      setMySkills(mine);
+      // Specifically fetch only my skills via the mentor_id parameter
+      const data = await api(`/skills?mentor_id=${user._id}`);
+      setMySkills(data.skills || []);
     } catch (err) {
       console.error(err);
     } finally {
