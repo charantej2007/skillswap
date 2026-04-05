@@ -185,7 +185,15 @@ export default function SignupPage() {
           <img
             src="/logo.png"
             alt="Skill Swap Logo"
-            style={{ width: 90, height: 90, margin: '0 auto 16px', objectFit: 'contain', display: 'block' }}
+            style={{
+              width: 96, height: 96,
+              margin: '0 auto 16px',
+              display: 'block',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: '3px solid var(--border)',
+              boxShadow: '0 4px 20px rgba(123,97,255,0.25)',
+            }}
           />
           <h1 style={{ fontSize: 26, fontWeight: 900, marginBottom: 6 }}>
             <span className="text-gradient">Skill Swap</span>
