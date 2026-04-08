@@ -4,7 +4,8 @@ const nextConfig = {
   // Only export to static for Capacitor (local build).
   // On Vercel, we want the default output to support API routes (serverless functions).
   output: process.env.VERCEL ? undefined : 'export',
-  distDir: 'www',
+  // Use 'www' for local Capacitor builds, but defaults to '.next' for Vercel.
+  distDir: process.env.VERCEL ? undefined : 'www',
   images: {
     unoptimized: true,
   },
