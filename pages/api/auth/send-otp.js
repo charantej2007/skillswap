@@ -1,10 +1,8 @@
 import connectDB from '../../../lib/mongodb';
 import User from '../../../models/User';
+import OTP from '../../../models/OTP';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-
-// Shared in-memory OTP store (persists across Next.js hot reloads via global)
-const otpStore = global.__otpStore || (global.__otpStore = {});
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -24,10 +22,17 @@ export default async function handler(req, res) {
   }
 
   // Not an existing user or doesn't have a password set yet -> Send OTP
-
   const otp = generateOTP();
-  const expires = Date.now() + 10 * 60 * 1000; // 10 min
-  otpStore[email] = { otp, expires };
+
+  // Save to MongoDB with auto-expiration (TTL index sets the deletion time)
+  try {
+    // Delete any existing OTP for this email first
+    await OTP.deleteMany({ email });
+    await OTP.create({ email, otp });
+  } catch (dbErr) {
+    console.error('DB Error saving OTP:', dbErr);
+    return res.status(500).json({ error: 'Failed to generate OTP. Please try again later.' });
+  }
 
   // Try to send email (fallback to console in dev)
   try {

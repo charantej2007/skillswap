@@ -1,8 +1,7 @@
 import connectDB from '../../../lib/mongodb';
 import User from '../../../models/User';
+import OTP from '../../../models/OTP';
 import jwt from 'jsonwebtoken';
-
-const otpStore = global.__otpStore || (global.__otpStore = {});
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -10,17 +9,20 @@ export default async function handler(req, res) {
   const { email, otp } = req.body;
   if (!email || !otp) return res.status(400).json({ error: 'Email and OTP required' });
 
-  const record = otpStore[email];
+  await connectDB();
+
+  // Find OTP in MongoDB
+  const record = await OTP.findOne({ email });
+  
   if (!record) return res.status(400).json({ error: 'OTP not found. Please request a new one.' });
-  if (Date.now() > record.expires) {
-    delete otpStore[email];
-    return res.status(400).json({ error: 'OTP expired. Please request a new one.' });
-  }
+  
+  // Note: MongoDB TTL index handles expiration (deletes the doc), 
+  // but we can add an extra check here if we want or just trust the DB.
   if (record.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
 
-  delete otpStore[email];
+  // Delete the OTP immediately after successful verification
+  await OTP.deleteOne({ _id: record._id });
 
-  await connectDB();
   let user = await User.findOne({ email }).select('+password');
   const isNew = !user;
 
