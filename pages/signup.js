@@ -176,7 +176,7 @@ export default function SignupPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <img
-            src="/logo.png"
+            src="logo.png"
             alt="Skill Swap Logo"
             style={{
               width: 96, height: 96,

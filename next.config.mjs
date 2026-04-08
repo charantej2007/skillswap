@@ -6,6 +6,8 @@ const nextConfig = {
   output: process.env.VERCEL ? undefined : 'export',
   // Use 'www' for local Capacitor builds, but defaults to '.next' for Vercel.
   distDir: process.env.VERCEL ? undefined : 'www',
+  // Use relative asset paths (./) for Capacitor builds, but defaults to '/' for Vercel.
+  assetPrefix: process.env.VERCEL ? undefined : './',
   images: {
     unoptimized: true,
   },
