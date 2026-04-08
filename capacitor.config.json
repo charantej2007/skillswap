@@ -1,10 +1,6 @@
 {
   "appId": "com.skillswap.app",
   "appName": "SkillSwap",
-  "webDir": "public",
-  "bundledWebRuntime": false,
-  "server": {
-    "url": "http://10.252.9.194:3000",
-    "cleartext": true
-  }
+  "webDir": "www",
+  "bundledWebRuntime": false
 }

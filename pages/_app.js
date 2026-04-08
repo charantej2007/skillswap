@@ -73,12 +73,15 @@ export default function App({ Component, pageProps }) {
   };
 
   const api = async (endpoint, options = {}) => {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
     const headers = {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     };
-    const res = await fetch(`/api${endpoint}`, { ...options, headers });
+    // Ensure endpoint starts with /
+    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const res = await fetch(`${baseUrl}/api${path}`, { ...options, headers });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Request failed');
     return data;

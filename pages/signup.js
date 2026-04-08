@@ -4,11 +4,13 @@ import { useRouter } from 'next/router';
 import { useApp } from './_app';
 import { auth, googleProvider } from '../lib/firebaseClient';
 import { signInWithPopup } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 const STEPS = { EMAIL: 'email', OTP: 'otp', SETUP_PASSWORD: 'setup_password', PROFILE: 'profile' };
 
 export default function SignupPage() {
-  const { login, user, showToast } = useApp();
+  const { login, user, showToast, api } = useApp();
   const router = useRouter();
   const [step, setStep] = useState(STEPS.EMAIL);
   const [email, setEmail] = useState('');
@@ -40,13 +42,10 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/send-otp', {
+      const data = await api('/auth/send-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
 
       if (data.requiresPassword || data.requiresGoogle) {
         showToast('Account already exists! Please log in.', 'error');
@@ -72,13 +71,10 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/verify-otp', {
+      const data = await api('/auth/verify-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       if (data.isNew || data.needsPassword) {
         setTempToken(data.token);
         setTempUser(data.user);
@@ -105,13 +101,11 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/setup-password', {
+      const data = await api('/auth/setup-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tempToken}` },
+        headers: { Authorization: `Bearer ${tempToken}` },
         body: JSON.stringify({ password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       
       login(tempUser, tempToken);
       showToast('Password set! Tell us your name next.', 'success');
@@ -131,13 +125,10 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('ss_token');
-      const res = await fetch('/api/user', {
+      const data = await api('/user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       login(data.user, token);
       router.push('/home');
     } catch (err) {
@@ -148,19 +139,21 @@ export default function SignupPage() {
   };
 
   const handleGoogle = async () => {
+    if (Capacitor.isNativePlatform()) {
+      await Browser.open({ url: `https://skillswap-pi-three.vercel.app/` });
+      return;
+    }
+
     setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const { displayName, email: gEmail, photoURL } = result.user;
       const idToken = await result.user.getIdToken();
 
-      const res = await fetch('/api/auth/google-login', {
+      const data = await api('/auth/google-login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken, name: displayName, email: gEmail, profile_image: photoURL }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       login(data.user, data.token);
       router.push('/home');
       showToast(`Welcome, ${displayName?.split(' ')[0] || 'there'}! 🎉`, 'success');

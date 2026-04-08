@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Only export to static for Capacitor (local build).
+  // On Vercel, we want the default output to support API routes (serverless functions).
+  output: process.env.VERCEL ? undefined : 'export',
+  distDir: 'www',
+  images: {
+    unoptimized: true,
+  },
 
   // Disable Turbopack — Pages Router + Turbopack has ISR manifest bugs in Next.js 16
   experimental: {},
@@ -8,11 +15,20 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Apply to all routes
+        // Apply CORS headers to all API routes
+        source: '/api/(.*)',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
+          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization' },
+        ],
+      },
+      {
+        // Headers for Firebase/Auth popup communication
         source: '/(.*)',
         headers: [
           {
-            // Required for Firebase Google Sign-In popup to communicate back
             key: 'Cross-Origin-Opener-Policy',
             value: 'same-origin-allow-popups',
           },

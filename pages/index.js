@@ -4,6 +4,8 @@ import { useRouter } from 'next/router';
 import { useApp } from './_app';
 import { auth, googleProvider } from '../lib/firebaseClient';
 import { signInWithPopup } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 // ── SVG Eye Icons ────────────────────────────────────────────────────────────
 function EyeIcon({ size = 20, color = 'currentColor' }) {
@@ -36,7 +38,7 @@ const STEP = {
 };
 
 export default function LoginPage() {
-  const { login, user, showToast } = useApp();
+  const { login, user, showToast, api } = useApp();
   const router = useRouter();
 
   // Login fields
@@ -70,21 +72,10 @@ export default function LoginPage() {
     if (!password) { showToast('Enter your password', 'error'); return; }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
+      const data = await api('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        if (data.error?.includes('set up your password via OTP')) {
-          showToast('No password set yet. Please sign up.', 'error');
-          router.push('/signup');
-        } else {
-          throw new Error(data.error);
-        }
-        return;
-      }
       login(data.user, data.token);
       showToast('Logged in! 🚀', 'success');
       router.push('/home');
@@ -96,18 +87,22 @@ export default function LoginPage() {
   };
 
   const handleGoogle = async () => {
+    if (Capacitor.isNativePlatform()) {
+      // For Capacitor, we use Browser to open the login page on the deployed site
+      // The web version of the site should handle the login and then deep link back
+      await Browser.open({ url: `https://skillswap-pi-three.vercel.app/` });
+      return;
+    }
+
     setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const { displayName, email: gEmail, photoURL } = result.user;
       const idToken = await result.user.getIdToken();
-      const res = await fetch('/api/auth/google-login', {
+      const data = await api('/auth/google-login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken, name: displayName, email: gEmail, profile_image: photoURL }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       login(data.user, data.token);
       router.push('/home');
       showToast(`Welcome, ${displayName?.split(' ')[0] || 'there'}! 🎉`, 'success');
@@ -125,13 +120,10 @@ export default function LoginPage() {
     if (!fpEmail || !fpEmail.includes('@')) { showToast('Enter a valid email', 'error'); return; }
     setFpLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      await api('/auth/forgot-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: fpEmail }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       setStep(STEP.FP_OTP);
       setCountdown(60);
       showToast('OTP sent to your email', 'success');
@@ -162,13 +154,10 @@ export default function LoginPage() {
     if (fpPwd !== fpConfirm) { showToast('Passwords do not match', 'error'); return; }
     setFpLoading(true);
     try {
-      const res = await fetch('/api/auth/reset-password', {
+      await api('/auth/reset-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: fpEmail, otp: fpOtp, newPassword: fpPwd }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       setStep(STEP.FP_DONE);
       showToast('Password reset successfully!', 'success');
     } catch (err) {
